@@ -2,15 +2,17 @@ import base64
 import binascii
 import json
 import logging
+import os
 import re
-import sqlite3
+import urllib.error
+import urllib.parse
+import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE_PATH = BASE_DIR / "portfolio.sqlite3"
 API_PATH = "/api/portfolio"
 MAX_REQUEST_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
@@ -27,23 +29,54 @@ IMAGE_DATA_URL = re.compile(
     r"^data:image/(?:jpeg|png|webp);base64,([A-Za-z0-9+/]*={0,2})$",
     re.IGNORECASE,
 )
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("SUPABASE_ANON_KEY")
+    or os.getenv("SUPABASE_KEY")
+    or ""
+)
 
 
-def initialize_database():
-    with sqlite3.connect(DATABASE_PATH) as connection:
-        connection.execute(
-            """CREATE TABLE IF NOT EXISTS portfolio (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                full_name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                address TEXT NOT NULL,
-                about TEXT NOT NULL,
-                education TEXT NOT NULL,
-                template TEXT NOT NULL,
-                profile_image TEXT NOT NULL DEFAULT ''
-            )"""
-        )
+def supabase_request(method, path, *, payload=None, params=None, extra_headers=None):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("Supabase is not configured.")
+
+    url = f"{SUPABASE_URL}/rest/v1{path}"
+    if params:
+        url = f"{url}?{urllib.parse.urlencode(params, doseq=True)}"
+
+    body = None
+    headers = {
+        "Accept": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response_body = response.read()
+            if not response_body:
+                return None
+            try:
+                return json.loads(response_body.decode("utf-8"))
+            except json.JSONDecodeError:
+                return response_body.decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        error_text = exc.read().decode("utf-8", errors="replace")
+        try:
+            error_payload = json.loads(error_text)
+        except json.JSONDecodeError:
+            error_payload = {"error": error_text or exc.reason}
+        raise RuntimeError(error_payload.get("message") or error_payload.get("error") or exc.reason) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Unable to reach Supabase: {exc.reason}") from exc
 
 
 class PortfolioHandler(SimpleHTTPRequestHandler):
@@ -61,20 +94,22 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
             return super().do_GET()
 
         try:
-            with sqlite3.connect(DATABASE_PATH) as connection:
-                connection.row_factory = sqlite3.Row
-                row = connection.execute(
-                    "SELECT full_name, email, phone, address, about, education, "
-                    "template, profile_image FROM portfolio WHERE id = 1"
-                ).fetchone()
-        except sqlite3.Error:
-            logging.exception("Could not read the portfolio database")
-            return self.send_json(500, {"error": "Could not read the portfolio database."})
+            rows = supabase_request(
+                "GET",
+                "/portfolio",
+                params={
+                    "select": "full_name,email,phone,address,about,education,template,profile_image",
+                    "id": "eq.1",
+                },
+            )
+        except RuntimeError as exc:
+            logging.exception("Could not read the portfolio from Supabase")
+            return self.send_json(500, {"error": str(exc)})
 
-        if row is None:
+        if not rows:
             return self.send_json(200, {"saved": False})
 
-        profile = dict(row)
+        profile = dict(rows[0])
         profile["profileImage"] = profile.pop("profile_image")
         profile["saved"] = True
         self.send_json(200, profile)
@@ -143,36 +178,28 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
         if errors:
             return self.send_json(400, {"error": "Please correct the profile data.", "fields": errors})
 
+        payload = {
+            "id": 1,
+            "full_name": profile["full_name"],
+            "email": profile["email"],
+            "phone": profile["phone"],
+            "address": profile["address"],
+            "about": profile["about"],
+            "education": profile["education"],
+            "template": profile["template"],
+            "profile_image": profile["profile_image"],
+        }
         try:
-            with sqlite3.connect(DATABASE_PATH) as connection:
-                connection.execute(
-                    """INSERT INTO portfolio (
-                        id, full_name, email, phone, address, about, education, template, profile_image
-                    ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET
-                        full_name = excluded.full_name,
-                        email = excluded.email,
-                        phone = excluded.phone,
-                        address = excluded.address,
-                        about = excluded.about,
-                        education = excluded.education,
-                        template = excluded.template,
-                        profile_image = excluded.profile_image""",
-                    (
-                        profile["full_name"],
-                        profile["email"],
-                        profile["phone"],
-                        profile["address"],
-                        profile["about"],
-                        profile["education"],
-                        profile["template"],
-                        profile["profile_image"],
-                    ),
-                )
-        except sqlite3.Error:
-            logging.exception("Could not save the portfolio")
-            return self.send_json(500, {"error": "Could not save the portfolio."})
-
+            supabase_request(
+                "POST",
+                "/portfolio",
+                payload=payload,
+                params={"on_conflict": "id"},
+                extra_headers={"Prefer": "resolution=merge-duplicates"},
+            )
+        except RuntimeError as exc:
+            logging.exception("Could not save the portfolio to Supabase")
+            return self.send_json(500, {"error": str(exc)})
         self.send_json(200, {"saved": True})
 
     def do_DELETE(self):
@@ -180,25 +207,31 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
             return self.send_json(404, {"error": "Not found"})
 
         try:
-            with sqlite3.connect(DATABASE_PATH) as connection:
-                connection.execute("DELETE FROM portfolio WHERE id = 1")
-        except sqlite3.Error:
-            logging.exception("Could not delete the portfolio")
-            return self.send_json(500, {"error": "Could not delete the portfolio."})
-
+            supabase_request(
+                "DELETE",
+                "/portfolio",
+                params={"id": "eq.1"},
+            )
+        except RuntimeError as exc:
+            logging.exception("Could not delete the portfolio from Supabase")
+            return self.send_json(500, {"error": str(exc)})
         self.send_json(200, {"saved": False})
 
 
 def main():
-    initialize_database()
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError(
+            "Supabase is required. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+        )
+
     server = ThreadingHTTPServer(
         ("127.0.0.1", 8000),
         lambda *args, **kwargs: PortfolioHandler(
             *args, directory=str(BASE_DIR), **kwargs
         ),
     )
+    print("Supabase database enabled.")
     print("Portfolio Generator running at http://127.0.0.1:8000")
-    print(f"SQLite database: {DATABASE_PATH}")
     print("Press Ctrl+C to stop the server.")
     try:
         server.serve_forever()
