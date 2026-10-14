@@ -1,0 +1,155 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portfolio Template Generator</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./">Portfolio Studio</a>
+    <span class="header-tag">IM Project</span>
+  </header>
+
+  <main class="workspace">
+    <section class="editor-panel">
+      <div class="panel-heading">
+        <p class="eyebrow">Build your profile</p>
+        <h1>Portfolio information</h1>
+        <p>Enter your details, pick a design, and save your portfolio to the local database.</p>
+      </div>
+
+      <form data-portfolio-form>
+        <div class="field">
+          <label for="full_name">Full name</label>
+          <input id="full_name" name="full_name" value="Input Name" maxlength="120" required data-field="full_name">
+        </div>
+
+        <div class="field">
+          <label for="profile_image">Profile picture</label>
+          <input id="profile_image" name="profile_image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" data-image-input>
+          <small>JPG, PNG, or WebP; maximum 2 MB.</small>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" value="user@example.com" maxlength="255" required data-field="email">
+        </div>
+
+        <div class="field">
+          <label for="phone">Contact number</label>
+          <input id="phone" name="phone" type="tel" value="+63 900 000 0001" maxlength="40" required data-field="phone">
+        </div>
+
+        <div class="field">
+          <label for="address">Address</label>
+          <input id="address" name="address" value="Cebu City, Philippines" maxlength="180" required data-field="address">
+        </div>
+
+        <div class="field">
+          <label for="about">About me</label>
+          <textarea id="about" name="about" maxlength="3000" required data-field="about">I am a creative and detail-oriented professional who enjoys building useful, accessible digital experiences.</textarea>
+        </div>
+
+        <div class="field">
+          <label for="education">Educational background</label>
+          <textarea id="education" name="education" maxlength="3000" required data-field="education">Bachelor of Science in Information Technology
+University of Cebu Eastern College
+2026 - 2027</textarea>
+        </div>
+
+        <fieldset class="template-field">
+          <legend>Choose a template</legend>
+          <div class="template-options">
+            <label class="template-choice">
+              <input type="radio" name="template" value="classic" checked data-template-choice>
+              <span class="template-swatch swatch-classic" aria-hidden="true"></span>
+              <span><strong>Classic</strong><small>Professional</small></span>
+            </label>
+            <label class="template-choice">
+              <input type="radio" name="template" value="modern" data-template-choice>
+              <span class="template-swatch swatch-modern" aria-hidden="true"></span>
+              <span><strong>Modern</strong><small>Bold</small></span>
+            </label>
+            <label class="template-choice">
+              <input type="radio" name="template" value="minimal" data-template-choice>
+              <span class="template-swatch swatch-minimal" aria-hidden="true"></span>
+              <span><strong>Minimal</strong><small>Clean</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="editor-actions">
+          <button class="button button-primary" type="submit">Save portfolio</button>
+          <button class="button button-secondary" type="reset">Reset</button>
+        </div>
+        <button class="button button-secondary saved-check-button" type="button" data-view-saved>View saved portfolio</button>
+        <p class="save-status" role="status" aria-live="polite" data-save-status></p>
+      </form>
+    </section>
+
+    <section class="preview-panel" aria-label="Portfolio preview">
+      <div class="preview-heading">
+        <div>
+          <p class="eyebrow">Your design</p>
+          <h2>Live preview</h2>
+        </div>
+        <span class="live-badge">Preview</span>
+      </div>
+
+      <article class="portfolio-card template-classic" data-preview-card>
+        <header class="portfolio-hero">
+          <img class="avatar" src="imgs.jpg" alt="Profile photo of Alex Morgan">
+          <div>
+            <p class="eyebrow">Personal Portfolio</p>
+            <h1 data-preview="full_name">Name</h1>
+            <p class="role">Input text</p>
+          </div>
+        </header>
+        <div class="portfolio-content">
+          <section class="contact-grid" aria-label="Contact information">
+            <div class="info-card">
+              <h2>Email</h2>
+              <p data-preview="email">user@example.com</p>
+            </div>
+            <div class="info-card">
+              <h2>Contact number</h2>
+              <p data-preview="phone">+63 900 000 0001</p>
+            </div>
+            <div class="info-card">
+              <h2>Address</h2>
+              <p data-preview="address">Cebu City, Philippines</p>
+            </div>
+          </section>
+          <section class="content-section">
+            <h2>About me</h2>
+            <p data-preview="about">I am a creative and detail-oriented professional who enjoys building useful, accessible digital experiences.</p>
+          </section>
+          <section class="content-section">
+            <h2>Educational background</h2>
+            <p class="multiline" data-preview="education">Bachelor of Science in Information Technology
+University of Cebu Eastern College
+2026 - 2027</p>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <dialog class="saved-dialog" data-saved-dialog aria-labelledby="saved-dialog-title">
+    <div class="saved-dialog-header">
+      <div>
+        <p class="eyebrow">Saved on this computer</p>
+        <h2 id="saved-dialog-title">Your saved portfolio</h2>
+      </div>
+      <div class="saved-dialog-actions">
+        <button class="button button-primary" type="button" data-download-saved>Download</button>
+        <button class="button button-secondary" type="button" data-close-saved>Close</button>
+      </div>
+    </div>
+    <div data-saved-content></div>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+portfolio.sqlite3
+portfolio.sqlite3-shm
+portfolio.sqlite3-wal
+.venv/
+venv/
