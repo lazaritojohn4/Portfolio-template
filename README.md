@@ -43,6 +43,9 @@ In the Netlify site settings, add these environment variables for the function:
 - `SUPABASE_URL` — your Supabase project URL.
 - `SUPABASE_SERVICE_ROLE_KEY` — your Supabase service-role key.
 
+If Supabase is not configured, the portfolio editor automatically saves to the
+current browser instead; those local saves are not shared between devices.
+
 Run the SQL above (or the migration) in Supabase before deploying. Keep the
 service-role key in Netlify environment variables only; never put it in frontend
 code or commit it. Push the repository to its connected Git provider, or deploy

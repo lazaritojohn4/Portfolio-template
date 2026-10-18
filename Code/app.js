@@ -8,6 +8,8 @@ const savedDialog = document.querySelector('[data-saved-dialog]');
 const savedContent = document.querySelector('[data-saved-content]');
 const downloadSavedButton = document.querySelector('[data-download-saved]');
 let profileImage = DEFAULT_IMAGE;
+let browserStorageMode = false;
+const SAVED_PROFILE_KEY = 'portfolio-template-profile';
 const profileFields = [
     'full_name',
     'career_title',
@@ -92,7 +94,38 @@ imageInput.addEventListener('change', (event) => {
     reader.readAsDataURL(file);
 });
 
+  function requestBrowserPortfolio(method, profile) {
+      if (method === 'PUT') {
+          localStorage.setItem(SAVED_PROFILE_KEY, JSON.stringify(profile));
+          return { saved: true };
+      }
+
+      if (method === 'DELETE') {
+          localStorage.removeItem(SAVED_PROFILE_KEY);
+          return { saved: false };
+      }
+
+      const savedProfile = localStorage.getItem(SAVED_PROFILE_KEY);
+      if (savedProfile === null) return { saved: false };
+
+      const storedProfile = JSON.parse(savedProfile);
+      const migratedProfile = { ...getProfile(), ...storedProfile };
+      migratedProfile.career_title ||= form.elements.career_title.value;
+      migratedProfile.skills = typeof migratedProfile.skills === 'string' ? migratedProfile.skills : '';
+      migratedProfile.projects = typeof migratedProfile.projects === 'string' ? migratedProfile.projects : '';
+      migratedProfile.work_experience = typeof migratedProfile.work_experience === 'string'
+          ? migratedProfile.work_experience
+          : '';
+      return { ...migratedProfile, saved: true };
+  }
+
+  function portfolioStorageName() {
+      return browserStorageMode ? 'this browser (Supabase is not configured)' : 'Supabase';
+  }
+
   async function requestPortfolio(method, profile) {
+      if (browserStorageMode) return requestBrowserPortfolio(method, profile);
+
       const options = {
           method,
           headers: { Accept: 'application/json' },
@@ -112,7 +145,12 @@ imageInput.addEventListener('change', (event) => {
       }
 
       if (!response.ok) {
-          throw new Error(payload.error || `The server returned status ${response.status}.`);
+          const error = new Error(payload.error || `The server returned status ${response.status}.`);
+          if (error.message.includes('Supabase is not configured')) {
+              browserStorageMode = true;
+              return requestBrowserPortfolio(method, profile);
+          }
+          throw error;
       }
 
       return payload;
@@ -148,7 +186,7 @@ imageInput.addEventListener('change', (event) => {
 
       try {
           await requestPortfolio('PUT', getProfile());
-          status.textContent = 'Portfolio saved to Supabase.';
+          status.textContent = `Portfolio saved to ${portfolioStorageName()}.`;
       } catch (error) {
           status.textContent = `Could not save the portfolio: ${error.message} Make sure server.py is running.`;
       }
@@ -158,7 +196,7 @@ imageInput.addEventListener('change', (event) => {
       try {
           const saved = await requestPortfolio('GET');
           if (!saved.saved) {
-              status.textContent = 'There is no saved portfolio in Supabase yet.';
+              status.textContent = `There is no saved portfolio in ${portfolioStorageName()} yet.`;
               return;
           }
           if (!isValidProfile(saved)) {
@@ -169,7 +207,7 @@ imageInput.addEventListener('change', (event) => {
           renderProfile(saved, savedCard);
           savedContent.replaceChildren(savedCard);
           savedDialog.showModal();
-          status.textContent = 'Showing the portfolio saved in Supabase.';
+          status.textContent = `Showing the portfolio saved in ${portfolioStorageName()}.`;
       } catch (error) {
           status.textContent = `Could not load the saved portfolio: ${error.message} Make sure server.py is running.`;
       }
@@ -274,7 +312,7 @@ form.addEventListener('reset', () => {
         imageInput.value = '';
         try {
             await requestPortfolio('DELETE');
-          status.textContent = 'Form reset and saved Supabase portfolio deleted.';
+          status.textContent = `Form reset and saved portfolio removed from ${portfolioStorageName()}.`;
         } catch (error) {
             status.textContent = `Form reset, but the saved portfolio could not be deleted: ${error.message}`;
         }
@@ -287,7 +325,7 @@ async function loadSavedProfile() {
         const saved = await requestPortfolio('GET');
         if (!saved.saved) {
             renderProfile(getProfile());
-            status.textContent = 'No saved portfolio yet. Fill in the form and choose Save portfolio.';
+            status.textContent = `No saved portfolio in ${portfolioStorageName()} yet. Fill in the form and choose Save portfolio.`;
             return;
         }
         if (!isValidProfile(saved)) {
@@ -295,7 +333,7 @@ async function loadSavedProfile() {
             return;
         }
         applyProfile(saved);
-      status.textContent = 'Saved profile loaded from Supabase.';
+      status.textContent = `Saved profile loaded from ${portfolioStorageName()}.`;
     } catch (error) {
         status.textContent = `Could not connect to the portfolio server: ${error.message} Start it with "py server.py".`;
     }
