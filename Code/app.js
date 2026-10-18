@@ -153,6 +153,11 @@ imageInput.addEventListener('change', (event) => {
           throw error;
       }
 
+      if (payload.browserStorage === true) {
+          browserStorageMode = true;
+          return requestBrowserPortfolio(method, profile);
+      }
+
       return payload;
   }
 

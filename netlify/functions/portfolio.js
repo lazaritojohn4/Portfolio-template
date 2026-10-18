@@ -101,6 +101,10 @@ async function supabaseRequest(method, path, options = {}) {
 
 exports.handler = async (event) => {
     try {
+        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            return jsonResponse(200, { browserStorage: true });
+        }
+
         if (event.httpMethod === 'GET') {
             const rows = await supabaseRequest('GET', '/portfolio', {
                 query: {
