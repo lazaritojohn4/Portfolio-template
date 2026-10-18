@@ -126,7 +126,7 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
-            return self.send_json(400, {"error": "Invalid Content-Length"})
+            return self.send_json(400, {"error": "Invalid content length"})
 
         if content_length <= 0:
             return self.send_json(400, {"error": "A JSON profile is required"})
