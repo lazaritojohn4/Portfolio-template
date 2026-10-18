@@ -10,7 +10,7 @@
 <body>
   <header class="site-header">
     <a class="brand" href="./">Portfolio Studio</a>
-    <span class="header-tag">IM Project</span>
+    <span class="header-tag">WST HCI AND IM PROJECT</span>
   </header>
 
   <main class="workspace">
@@ -18,13 +18,18 @@
       <div class="panel-heading">
         <p class="eyebrow">Build your profile</p>
         <h1>Portfolio information</h1>
-        <p>Enter your details, pick a design, and save your portfolio to the local database.</p>
+        <p>Enter your details, pick a design, and save your portfolio.</p>
       </div>
 
       <form data-portfolio-form>
         <div class="field">
           <label for="full_name">Full name</label>
           <input id="full_name" name="full_name" value="Input Name" maxlength="120" required data-field="full_name">
+        </div>
+
+        <div class="field">
+          <label for="career_title">Professional title</label>
+          <input id="career_title" name="career_title" value="Aspiring IT Professional" maxlength="120" required data-field="career_title">
         </div>
 
         <div class="field">
@@ -50,14 +55,31 @@
 
         <div class="field">
           <label for="about">About me</label>
-          <textarea id="about" name="about" maxlength="3000" required data-field="about">I am a creative and detail-oriented professional who enjoys building useful, accessible digital experiences.</textarea>
+          <textarea id="about" name="about" maxlength="3000" required data-field="about">I am a creative and detail oriented professional who enjoys building useful, accessible digital experiences.</textarea>
+        </div>
+
+        <div class="field">
+          <label for="skills">Skills</label>
+          <textarea id="skills" name="skills" maxlength="1000" placeholder="Separate skills with commas or new lines" data-field="skills">HTML, CSS, JavaScript, Python, UI/UX Design</textarea>
+          <small>Separate each skill with a comma or a new line.</small>
+        </div>
+
+        <div class="field">
+          <label for="projects">Projects</label>
+          <textarea id="projects" name="projects" maxlength="3000" placeholder="Project name, what you built, and the tools you used" data-field="projects">Portfolio Website: Built a responsive portfolio to showcase projects and skills using HTML, CSS, and JavaScript.</textarea>
+        </div>
+
+        <div class="field">
+          <label for="work_experience">Work experience</label>
+          <textarea id="work_experience" name="work_experience" maxlength="3000" placeholder="Role, organization, dates, and key contributions" data-field="work_experience">Student Developer | University of Cebu Eastern College | 2026 to 2027
+Building practical web development skills through coursework and collaborative projects.</textarea>
         </div>
 
         <div class="field">
           <label for="education">Educational background</label>
           <textarea id="education" name="education" maxlength="3000" required data-field="education">Bachelor of Science in Information Technology
 University of Cebu Eastern College
-2026 - 2027</textarea>
+2026 to 2027</textarea>
         </div>
 
         <fieldset class="template-field">
@@ -66,17 +88,17 @@ University of Cebu Eastern College
             <label class="template-choice">
               <input type="radio" name="template" value="classic" checked data-template-choice>
               <span class="template-swatch swatch-classic" aria-hidden="true"></span>
-              <span><strong>Classic</strong><small>Professional</small></span>
+              <span><strong>Creative</strong><small>Polished, expressive layouts</small></span>
             </label>
             <label class="template-choice">
               <input type="radio" name="template" value="modern" data-template-choice>
               <span class="template-swatch swatch-modern" aria-hidden="true"></span>
-              <span><strong>Modern</strong><small>Bold</small></span>
+              <span><strong>Modern</strong><small>Bold layouts, dark tones</small></span>
             </label>
             <label class="template-choice">
               <input type="radio" name="template" value="minimal" data-template-choice>
               <span class="template-swatch swatch-minimal" aria-hidden="true"></span>
-              <span><strong>Minimal</strong><small>Clean</small></span>
+              <span><strong>Simple</strong><small>Clean &amp; focused</small></span>
             </label>
           </div>
         </fieldset>
@@ -101,11 +123,11 @@ University of Cebu Eastern College
 
       <article class="portfolio-card template-classic" data-preview-card>
         <header class="portfolio-hero">
-          <img class="avatar" src="imgs.jpg" alt="Profile photo of Alex Morgan">
+          <img class="avatar" src="imgs.jpg" alt="Profile photo of Input Name">
           <div>
             <p class="eyebrow">Personal Portfolio</p>
             <h1 data-preview="full_name">Name</h1>
-            <p class="role">Input text</p>
+            <p class="role" data-preview="career_title">Aspiring IT Professional</p>
           </div>
         </header>
         <div class="portfolio-content">
@@ -125,13 +147,28 @@ University of Cebu Eastern College
           </section>
           <section class="content-section">
             <h2>About me</h2>
-            <p data-preview="about">I am a creative and detail-oriented professional who enjoys building useful, accessible digital experiences.</p>
+            <p data-preview="about">I am a creative and detail oriented professional who enjoys building useful, accessible digital experiences.</p>
+          </section>
+          <section class="content-section" data-section="skills">
+            <h2>Skills</h2>
+            <ul class="skill-list" data-preview-skills aria-label="Skills">
+              <li>HTML</li><li>CSS</li><li>JavaScript</li><li>Python</li><li>UI/UX Design</li>
+            </ul>
+          </section>
+          <section class="content-section" data-section="projects">
+            <h2>Projects</h2>
+            <p data-preview="projects">Portfolio Website: Built a responsive portfolio to showcase projects and skills using HTML, CSS, and JavaScript.</p>
+          </section>
+          <section class="content-section" data-section="work_experience">
+            <h2>Work experience</h2>
+            <p data-preview="work_experience">Student Developer | University of Cebu Eastern College | 2026 to 2027
+Building practical web development skills through coursework and collaborative projects.</p>
           </section>
           <section class="content-section">
             <h2>Educational background</h2>
             <p class="multiline" data-preview="education">Bachelor of Science in Information Technology
 University of Cebu Eastern College
-2026 - 2027</p>
+2026 to 2027</p>
           </section>
         </div>
       </article>
