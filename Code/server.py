@@ -18,12 +18,17 @@ MAX_REQUEST_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_BYTES = 2 * 1024 * 1024
 PROFILE_FIELDS = {
     "full_name": 120,
+    "career_title": 120,
     "email": 255,
     "phone": 40,
     "address": 180,
     "about": 3000,
+    "skills": 1000,
+    "projects": 3000,
+    "work_experience": 3000,
     "education": 3000,
 }
+OPTIONAL_PROFILE_FIELDS = {"skills", "projects", "work_experience"}
 TEMPLATES = {"classic", "modern", "minimal"}
 IMAGE_DATA_URL = re.compile(
     r"^data:image/(?:jpeg|png|webp);base64,([A-Za-z0-9+/]*={0,2})$",
@@ -98,7 +103,7 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
                 "GET",
                 "/portfolio",
                 params={
-                    "select": "full_name,email,phone,address,about,education,template,profile_image",
+                    "select": "full_name,career_title,email,phone,address,about,skills,projects,work_experience,education,template,profile_image",
                     "id": "eq.1",
                 },
             )
@@ -140,7 +145,9 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
         profile = {}
         for field, max_length in PROFILE_FIELDS.items():
             value = data.get(field)
-            if not isinstance(value, str) or not value.strip():
+            if field in OPTIONAL_PROFILE_FIELDS and value is None:
+                value = ""
+            if not isinstance(value, str) or (field not in OPTIONAL_PROFILE_FIELDS and not value.strip()):
                 errors[field] = "This field is required."
             elif len(value) > max_length:
                 errors[field] = f"Must be no longer than {max_length} characters."
@@ -181,10 +188,14 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
         payload = {
             "id": 1,
             "full_name": profile["full_name"],
+            "career_title": profile["career_title"],
             "email": profile["email"],
             "phone": profile["phone"],
             "address": profile["address"],
             "about": profile["about"],
+            "skills": profile["skills"],
+            "projects": profile["projects"],
+            "work_experience": profile["work_experience"],
             "education": profile["education"],
             "template": profile["template"],
             "profile_image": profile["profile_image"],
@@ -224,15 +235,14 @@ def main():
             "Supabase is required. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
         )
 
-    port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer(
-        ("0.0.0.0", port),
+        ("127.0.0.1", 8000),
         lambda *args, **kwargs: PortfolioHandler(
             *args, directory=str(BASE_DIR), **kwargs
         ),
     )
     print("Supabase database enabled.")
-    print(f"Portfolio Generator running on port {port}")
+    print("Portfolio Generator running at http://127.0.0.1:8000")
     print("Press Ctrl+C to stop the server.")
     try:
         server.serve_forever()

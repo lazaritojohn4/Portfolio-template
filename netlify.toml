@@ -1,0 +1,9 @@
+[build]
+  publish = "Code"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/portfolio"
+  to = "/.netlify/functions/portfolio"
+  status = 200
+  force = true

@@ -1,5 +1,4 @@
 const DEFAULT_IMAGE = 'imgs.jpg';
-const SAVED_PROFILE_KEY = 'portfolio-template-profile';
 const form = document.querySelector('[data-portfolio-form]');
 const card = document.querySelector('[data-preview-card]');
 const status = document.querySelector('[data-save-status]');
@@ -9,15 +8,30 @@ const savedDialog = document.querySelector('[data-saved-dialog]');
 const savedContent = document.querySelector('[data-saved-content]');
 const downloadSavedButton = document.querySelector('[data-download-saved]');
 let profileImage = DEFAULT_IMAGE;
-const profileFields = ['full_name', 'email', 'phone', 'address', 'about', 'education'];
+const profileFields = [
+    'full_name',
+    'career_title',
+    'email',
+    'phone',
+    'address',
+    'about',
+    'skills',
+    'projects',
+    'work_experience',
+    'education',
+];
 
 function getProfile() {
     return {
         full_name: form.elements.full_name.value,
+        career_title: form.elements.career_title.value,
         email: form.elements.email.value,
         phone: form.elements.phone.value,
         address: form.elements.address.value,
         about: form.elements.about.value,
+        skills: form.elements.skills.value,
+        projects: form.elements.projects.value,
+        work_experience: form.elements.work_experience.value,
         education: form.elements.education.value,
         template: form.querySelector('[data-template-choice]:checked').value,
         profileImage,
@@ -25,9 +39,21 @@ function getProfile() {
 }
 
 function renderProfile(profile, target = card) {
-    for (const field of ['full_name', 'email', 'phone', 'address', 'about', 'education']) {
+    for (const field of ['full_name', 'career_title', 'email', 'phone', 'address', 'about', 'projects', 'work_experience', 'education']) {
         target.querySelector(`[data-preview="${field}"]`).textContent = profile[field];
     }
+
+    const skills = typeof profile.skills === 'string' ? profile.skills : '';
+    const skillItems = skills.split(/[,\n]/).map((skill) => skill.trim()).filter(Boolean);
+    const skillList = target.querySelector('[data-preview-skills]');
+    skillList.replaceChildren(...skillItems.map((skill) => {
+        const item = document.createElement('li');
+        item.textContent = skill;
+        return item;
+    }));
+    target.querySelector('[data-section="skills"]').hidden = skillItems.length === 0;
+    target.querySelector('[data-section="projects"]').hidden = !profile.projects;
+    target.querySelector('[data-section="work_experience"]').hidden = !profile.work_experience;
 
     target.classList.remove('template-classic', 'template-modern', 'template-minimal');
     target.classList.add(`template-${profile.template}`);
@@ -66,12 +92,39 @@ imageInput.addEventListener('change', (event) => {
     reader.readAsDataURL(file);
 });
 
+  async function requestPortfolio(method, profile) {
+      const options = {
+          method,
+          headers: { Accept: 'application/json' },
+      };
+
+      if (profile) {
+          options.headers['Content-Type'] = 'application/json';
+          options.body = JSON.stringify(profile);
+      }
+
+      const response = await fetch('/api/portfolio', options);
+      let payload;
+      try {
+          payload = await response.json();
+      } catch {
+          throw new Error('The server returned an invalid response.');
+      }
+
+      if (!response.ok) {
+          throw new Error(payload.error || `The server returned status ${response.status}.`);
+      }
+
+      return payload;
+  }
+
   function isValidProfile(profile) {
       return profile
           && profileFields.every((field) => typeof profile[field] === 'string')
           && ['classic', 'modern', 'minimal'].includes(profile.template)
           && (
               profile.profileImage == null
+              || profile.profileImage === ''
               || profile.profileImage === DEFAULT_IMAGE
               || (typeof profile.profileImage === 'string'
                   && /^data:image\/(?:jpeg|png|webp);base64,/i.test(profile.profileImage))
@@ -80,7 +133,7 @@ imageInput.addEventListener('change', (event) => {
 
   function applyProfile(profile) {
       profileFields.forEach((field) => {
-          form.elements[field].value = profile[field];
+          form.elements[field].value = profile[field] || '';
       });
       form.querySelector(`[data-template-choice][value="${profile.template}"]`).checked = true;
       imageInput.value = '';
@@ -88,27 +141,26 @@ imageInput.addEventListener('change', (event) => {
       renderProfile(getProfile());
   }
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
       if (!form.reportValidity()) return;
 
       try {
-          localStorage.setItem(SAVED_PROFILE_KEY, JSON.stringify(getProfile()));
-          status.textContent = 'Portfolio saved in this browser.';
+          await requestPortfolio('PUT', getProfile());
+          status.textContent = 'Portfolio saved to Supabase.';
       } catch (error) {
-          status.textContent = `Could not save the portfolio in this browser: ${error.message}`;
+          status.textContent = `Could not save the portfolio: ${error.message} Make sure server.py is running.`;
       }
   });
 
-  viewSavedButton.addEventListener('click', () => {
+  viewSavedButton.addEventListener('click', async () => {
       try {
-          const storedProfile = localStorage.getItem(SAVED_PROFILE_KEY);
-          if (storedProfile === null) {
-              status.textContent = 'There is no saved portfolio in this browser yet.';
+          const saved = await requestPortfolio('GET');
+          if (!saved.saved) {
+              status.textContent = 'There is no saved portfolio in Supabase yet.';
               return;
           }
-          const saved = JSON.parse(storedProfile);
           if (!isValidProfile(saved)) {
               status.textContent = 'The saved portfolio data is invalid.';
               return;
@@ -117,9 +169,9 @@ imageInput.addEventListener('change', (event) => {
           renderProfile(saved, savedCard);
           savedContent.replaceChildren(savedCard);
           savedDialog.showModal();
-          status.textContent = 'Showing the portfolio saved in this browser.';
+          status.textContent = 'Showing the portfolio saved in Supabase.';
       } catch (error) {
-          status.textContent = `Could not load the saved portfolio: ${error.message}`;
+          status.textContent = `Could not load the saved portfolio: ${error.message} Make sure server.py is running.`;
       }
   });
 
@@ -217,36 +269,35 @@ function escapeHtml(value) {
 }
 
 form.addEventListener('reset', () => {
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
         profileImage = DEFAULT_IMAGE;
         imageInput.value = '';
         try {
-            localStorage.removeItem(SAVED_PROFILE_KEY);
-            status.textContent = 'Form reset and saved portfolio removed from this browser.';
+            await requestPortfolio('DELETE');
+          status.textContent = 'Form reset and saved Supabase portfolio deleted.';
         } catch (error) {
-            status.textContent = `Form reset, but the saved portfolio could not be removed: ${error.message}`;
+            status.textContent = `Form reset, but the saved portfolio could not be deleted: ${error.message}`;
         }
         renderProfile(getProfile());
     }, 0);
 });
 
-function loadSavedProfile() {
+async function loadSavedProfile() {
     try {
-        const storedProfile = localStorage.getItem(SAVED_PROFILE_KEY);
-        if (storedProfile === null) {
+        const saved = await requestPortfolio('GET');
+        if (!saved.saved) {
             renderProfile(getProfile());
-            status.textContent = 'No saved portfolio in this browser yet. Fill in the form and choose Save portfolio.';
+            status.textContent = 'No saved portfolio yet. Fill in the form and choose Save portfolio.';
             return;
         }
-        const saved = JSON.parse(storedProfile);
         if (!isValidProfile(saved)) {
             status.textContent = 'Saved portfolio data is invalid. Save a new profile to replace it.';
             return;
         }
         applyProfile(saved);
-        status.textContent = 'Saved profile loaded from this browser.';
+      status.textContent = 'Saved profile loaded from Supabase.';
     } catch (error) {
-        status.textContent = `Could not load the saved portfolio from this browser: ${error.message}`;
+        status.textContent = `Could not connect to the portfolio server: ${error.message} Start it with "py server.py".`;
     }
 }
 
