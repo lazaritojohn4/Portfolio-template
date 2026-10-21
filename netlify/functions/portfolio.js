@@ -37,6 +37,12 @@ function validateProfile(data) {
         if (value.length > maxLength) {
             return { error: `${field} must be no longer than ${maxLength} characters.` };
         }
+        if (field === 'full_name' && !/^\p{L}+(?: *\p{L}+)* *$/u.test(value)) {
+            return { error: 'Use letters and spaces only for the full name.' };
+        }
+        if (field === 'career_title' && !/^\p{L}+(?: *\p{L}+)* *$/u.test(value)) {
+            return { error: 'Use letters and spaces only for the professional title.' };
+        }
         if (field === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) {
             return { error: 'Enter a valid email address.' };
         }

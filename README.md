@@ -76,7 +76,6 @@ configured; it does not use a local database.
 * `server.py`: local HTTP server and Supabase API.
 * `netlify/functions/portfolio.js`: Supabase Netlify API function.
 * `netlify.toml`: Netlify publish directory and API route.
-* `imgs.jpg`: sample profile image.
 * `server.js`: static Node.js server; use `server.py` for Supabase saving.
 
 Clone the repository with:

@@ -1,14 +1,17 @@
-const DEFAULT_IMAGE = 'imgs.jpg';
+const LEGACY_DEFAULT_IMAGE = 'imgs.jpg';
 const form = document.querySelector('[data-portfolio-form]');
 const card = document.querySelector('[data-preview-card]');
 const status = document.querySelector('[data-save-status]');
 const imageInput = form.querySelector('[data-image-input]');
+const fullNameInput = form.elements.full_name;
+const careerTitleInput = form.elements.career_title;
 const viewSavedButton = form.querySelector('[data-view-saved]');
 const savedDialog = document.querySelector('[data-saved-dialog]');
 const savedContent = document.querySelector('[data-saved-content]');
 const downloadSavedButton = document.querySelector('[data-download-saved]');
-let profileImage = DEFAULT_IMAGE;
-let browserStorageMode = false;
+let profileImage = '';
+let browserStorageMode = window.location.protocol === 'file:';
+let hasUnsavedChanges = false;
 const SAVED_PROFILE_KEY = 'portfolio-template-profile';
 const profileFields = [
     'full_name',
@@ -25,7 +28,7 @@ const profileFields = [
 
 function getProfile() {
     return {
-        full_name: form.elements.full_name.value,
+        full_name: form.elements.full_name.value.trim().replace(/ +/g, ' '),
         career_title: form.elements.career_title.value,
         email: form.elements.email.value,
         phone: form.elements.phone.value,
@@ -36,8 +39,31 @@ function getProfile() {
         work_experience: form.elements.work_experience.value,
         education: form.elements.education.value,
         template: form.querySelector('[data-template-choice]:checked').value,
-        profileImage,
+        profileImage: profileImage === LEGACY_DEFAULT_IMAGE ? '' : profileImage,
     };
+}
+
+function isValidName(name) {
+    return /^\p{L}+(?: *\p{L}+)* *$/u.test(name);
+}
+
+function isValidCareerTitle(title) {
+    return isValidName(title);
+}
+
+function validateFullName() {
+    fullNameInput.setCustomValidity(
+        fullNameInput.value && !isValidName(fullNameInput.value)
+            ? 'Use letters and spaces only for the full name.'
+            : '',
+    );
+}
+
+function sanitizeLettersAndSpaces(field) {
+    field.value = field.value
+        .replace(/[^\p{L} ]/gu, '')
+        .replace(/ {2,}/g, ' ')
+        .trimStart();
 }
 
 function renderProfile(profile, target = card) {
@@ -59,14 +85,60 @@ function renderProfile(profile, target = card) {
 
     target.classList.remove('template-classic', 'template-modern', 'template-minimal');
     target.classList.add(`template-${profile.template}`);
-
     const avatar = target.querySelector('.avatar');
-    avatar.src = profile.profileImage || DEFAULT_IMAGE;
-    avatar.alt = `Profile photo of ${profile.full_name}`;
+    const image = profile.profileImage && profile.profileImage !== LEGACY_DEFAULT_IMAGE;
+    if (image && avatar.tagName !== 'IMG') {
+        const imageElement = document.createElement('img');
+        imageElement.className = 'avatar';
+        avatar.replaceWith(imageElement);
+        target.querySelector('.avatar').src = profile.profileImage;
+    } else if (!image && avatar.tagName === 'IMG') {
+        const placeholder = document.createElement('span');
+        placeholder.className = 'avatar avatar-placeholder';
+        placeholder.setAttribute('aria-hidden', 'true');
+        placeholder.textContent = '?';
+        avatar.replaceWith(placeholder);
+    } else if (image) {
+        avatar.src = profile.profileImage;
+    }
+    const renderedAvatar = target.querySelector('.avatar');
+    if (renderedAvatar.tagName === 'IMG') {
+        renderedAvatar.alt = profile.full_name ? `Profile photo of ${profile.full_name}` : 'Profile photo';
+    }
 }
 
 form.querySelectorAll('[data-field]').forEach((field) => {
-    field.addEventListener('input', () => renderProfile(getProfile()));
+    field.addEventListener('input', () => {
+        if (field === fullNameInput) {
+            sanitizeLettersAndSpaces(fullNameInput);
+            validateFullName();
+        } else if (field === careerTitleInput) {
+            sanitizeLettersAndSpaces(careerTitleInput);
+        }
+        renderProfile(getProfile());
+    });
+});
+
+form.addEventListener('input', () => {
+    hasUnsavedChanges = true;
+});
+form.addEventListener('change', () => {
+    hasUnsavedChanges = true;
+});
+window.addEventListener('beforeunload', (event) => {
+    if (!hasUnsavedChanges) return;
+    event.preventDefault();
+    event.returnValue = '';
+});
+
+form.querySelectorAll('[placeholder]').forEach((field) => {
+    const example = field.placeholder;
+    field.addEventListener('focus', () => {
+        field.placeholder = '';
+    });
+    field.addEventListener('blur', () => {
+        if (!field.value) field.placeholder = example;
+    });
 });
 
 form.querySelectorAll('[data-template-choice]').forEach((choice) => {
@@ -120,7 +192,7 @@ imageInput.addEventListener('change', (event) => {
   }
 
   function portfolioStorageName() {
-      return browserStorageMode ? 'this browser (Supabase is not configured)' : 'Supabase';
+      return browserStorageMode ? 'this browser' : 'Supabase';
   }
 
   async function requestPortfolio(method, profile) {
@@ -164,11 +236,13 @@ imageInput.addEventListener('change', (event) => {
   function isValidProfile(profile) {
       return profile
           && profileFields.every((field) => typeof profile[field] === 'string')
+          && isValidName(profile.full_name)
+          && isValidCareerTitle(profile.career_title)
           && ['classic', 'modern', 'minimal'].includes(profile.template)
           && (
               profile.profileImage == null
               || profile.profileImage === ''
-              || profile.profileImage === DEFAULT_IMAGE
+              || profile.profileImage === LEGACY_DEFAULT_IMAGE
               || (typeof profile.profileImage === 'string'
                   && /^data:image\/(?:jpeg|png|webp);base64,/i.test(profile.profileImage))
           );
@@ -178,10 +252,14 @@ imageInput.addEventListener('change', (event) => {
       profileFields.forEach((field) => {
           form.elements[field].value = profile[field] || '';
       });
+      validateFullName();
       form.querySelector(`[data-template-choice][value="${profile.template}"]`).checked = true;
       imageInput.value = '';
-      profileImage = profile.profileImage || DEFAULT_IMAGE;
+      profileImage = profile.profileImage && profile.profileImage !== LEGACY_DEFAULT_IMAGE
+          ? profile.profileImage
+          : '';
       renderProfile(getProfile());
+      hasUnsavedChanges = false;
   }
 
   form.addEventListener('submit', async (event) => {
@@ -191,6 +269,7 @@ imageInput.addEventListener('change', (event) => {
 
       try {
           await requestPortfolio('PUT', getProfile());
+          hasUnsavedChanges = false;
           status.textContent = `Portfolio saved to ${portfolioStorageName()}.`;
       } catch (error) {
           status.textContent = `Could not save the portfolio: ${error.message} Make sure server.py is running.`;
@@ -244,8 +323,7 @@ imageInput.addEventListener('change', (event) => {
       try {
           const downloadableCard = savedCard.cloneNode(true);
           const avatar = downloadableCard.querySelector('.avatar');
-          avatar.src = await imageAsDataUrl(avatar.src);
-
+          if (avatar.tagName === 'IMG') avatar.src = await imageAsDataUrl(avatar.src);
           const documentHtml = `<!doctype html>
   <html lang="en">
   <head>
@@ -273,7 +351,7 @@ imageInput.addEventListener('change', (event) => {
         window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
         status.textContent = 'Downloaded the saved portfolio as a standalone HTML file.';
     } catch {
-        status.textContent = 'Could not prepare the download image. Check your connection and try again.';
+        status.textContent = 'Could not prepare the portfolio download image. Check your connection and try again.';
     }
 });
 
@@ -313,12 +391,15 @@ function escapeHtml(value) {
 
 form.addEventListener('reset', () => {
     window.setTimeout(async () => {
-        profileImage = DEFAULT_IMAGE;
+        profileImage = '';
         imageInput.value = '';
+        validateFullName();
         try {
             await requestPortfolio('DELETE');
+          hasUnsavedChanges = false;
           status.textContent = `Form reset and saved portfolio removed from ${portfolioStorageName()}.`;
         } catch (error) {
+            hasUnsavedChanges = true;
             status.textContent = `Form reset, but the saved portfolio could not be deleted: ${error.message}`;
         }
         renderProfile(getProfile());
@@ -330,7 +411,8 @@ async function loadSavedProfile() {
         const saved = await requestPortfolio('GET');
         if (!saved.saved) {
             renderProfile(getProfile());
-            status.textContent = `No saved portfolio in ${portfolioStorageName()} yet. Fill in the form and choose Save portfolio.`;
+            hasUnsavedChanges = false;
+            status.textContent = `No saved portfolio in ${portfolioStorageName()} yet. Fill in the form and choose Save.`;
             return;
         }
         if (!isValidProfile(saved)) {
@@ -338,10 +420,12 @@ async function loadSavedProfile() {
             return;
         }
         applyProfile(saved);
+      hasUnsavedChanges = false;
       status.textContent = `Saved profile loaded from ${portfolioStorageName()}.`;
     } catch (error) {
         status.textContent = `Could not connect to the portfolio server: ${error.message} Start it with "py server.py".`;
     }
 }
 
+renderProfile(getProfile());
 loadSavedProfile();

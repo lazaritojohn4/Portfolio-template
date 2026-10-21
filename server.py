@@ -151,6 +151,10 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
                 errors[field] = "This field is required."
             elif len(value) > max_length:
                 errors[field] = f"Must be no longer than {max_length} characters."
+            elif field == "full_name" and not all(part.isalpha() for part in value.split()):
+                errors[field] = "Use letters and spaces only for the full name."
+            elif field == "career_title" and not all(part.isalpha() for part in value.split()):
+                errors[field] = "Use letters and spaces only for the professional title."
             elif field == "email" and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
                 errors[field] = "Enter a valid email address."
             else:

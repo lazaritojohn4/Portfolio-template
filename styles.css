@@ -15,7 +15,6 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 90% 0
 a { color: inherit; }
 .site-header { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(20px, 5vw, 70px); color: #fff; background: #202943; }
 .brand { color: inherit; text-decoration: none; font-weight: 800; letter-spacing: .02em; }
-.header-tag, .live-badge { border: 1px solid #ffffff35; border-radius: 999px; padding: 8px 12px; font-size: .75rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 .workspace { width: min(1440px, 100%); margin: 0 auto; padding: 28px; display: grid; grid-template-columns: minmax(300px, 410px) minmax(0, 1fr); gap: 24px; align-items: start; }
 .editor-panel, .preview-panel { border: 1px solid #e7eaf1; border-radius: 20px; background: #fff; box-shadow: 0 12px 38px #25304c0d; }
 .editor-panel { padding: 26px; }
@@ -27,6 +26,7 @@ a { color: inherit; }
 .field { margin-bottom: 16px; }
 .field label, .template-field legend { display: block; margin-bottom: 7px; font-size: .82rem; font-weight: 750; color: #444d60; }
 .field input:not([type="file"]), .field textarea { width: 100%; border: 1px solid #dfe4ed; border-radius: 10px; padding: 11px 12px; font: inherit; color: #202638; background: #fff; }
+.field input::placeholder, .field textarea::placeholder { color: #9aa3b4; opacity: 1; }
 .field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
 .field input:focus, .field textarea:focus { outline: 3px solid #315eea20; border-color: #7190f6; }
 .field input[type="file"] { width: 100%; border: 1px dashed #b7c4e6; border-radius: 10px; padding: 10px; background: #f9faff; color: #59657d; }
@@ -66,12 +66,12 @@ a { color: inherit; }
 .preview-panel { min-width: 0; padding: 26px; background: #f9faff; }
 .preview-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .preview-heading h2 { font-size: 1.25rem; }
-.live-badge { color: #3154be; background: #eaf0ff; border-color: #d8e2ff; font-size: .68rem; }
 .portfolio-card { --accent: #315eea; --soft: #eaf0ff; width: min(100%, 840px); margin: 0 auto; overflow: hidden; border: 1px solid #e6e9f0; border-radius: 20px; background: #fff; box-shadow: 0 14px 38px #1b27400c; }
 .template-modern { --accent: #e76d50; --soft: #fff0eb; border-radius: 5px; }
 .template-minimal { --accent: #18825e; --soft: #eaf8f1; box-shadow: none; }
 .portfolio-hero { display: flex; align-items: center; gap: 23px; padding: clamp(25px, 5vw, 52px); background: linear-gradient(135deg, var(--soft), #fff 85%); border-bottom: 1px solid #edf0f5; }
-.avatar { width: 112px; height: 112px; flex: 0 0 auto; border: 4px solid #fff; border-radius: 50%; object-fit: cover; background: #e9edf6; box-shadow: 0 7px 20px #18294b20; }
+.avatar { width: 112px; height: 112px; flex: 0 0 auto; border: 4px solid #fff; border-radius: 50%; background: #e9edf6; box-shadow: 0 7px 20px #18294b20; }
+.avatar-placeholder { display: grid; place-items: center; color: var(--accent); font-size: 3rem; font-weight: 800; line-height: 1; }
 .portfolio-hero h1 { margin: 0; color: #1e2638; font-size: clamp(1.65rem, 3vw, 2.5rem); line-height: 1.1; letter-spacing: -.04em; overflow-wrap: anywhere; }
 .role { margin: 9px 0 0; color: var(--accent); font-size: .73rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .portfolio-content { padding: clamp(22px, 4vw, 38px); }
@@ -105,6 +105,7 @@ a { color: inherit; }
 .template-modern .skill-list li { color: #ffe0d8; background: #3a2b2e; border-color: #634044; }
 .template-minimal { --accent: #18825e; --soft: #eaf8f1; border: 0; border-radius: 0; box-shadow: none; }
 .template-minimal .portfolio-hero { align-items: flex-end; padding-right: clamp(22px, 8vw, 76px); padding-left: clamp(22px, 8vw, 76px); background: #fff; border-bottom: 1px solid #dbe8e1; }
+.template-minimal .portfolio-hero .eyebrow { color: var(--accent); }
 .template-minimal .avatar { width: 92px; height: 92px; border: 0; border-radius: 8px; box-shadow: none; }
 .template-minimal .portfolio-content { max-width: 720px; margin: 0 auto; }
 .template-minimal .contact-grid { gap: 20px; }
