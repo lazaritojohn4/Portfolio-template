@@ -46,6 +46,10 @@ In the Netlify site settings, add these environment variables for the function:
 If Supabase is not configured, the portfolio editor automatically saves to the
 current browser instead; those local saves are not shared between devices.
 
+GitHub Pages has no serverless portfolio API, so it always saves to the current
+browser. To save profiles in Supabase, deploy to Netlify and configure the
+environment variables above.
+
 Run the SQL above (or the migration) in Supabase before deploying. Keep the
 service role key in Netlify environment variables only; never put it in frontend
 code or commit it. Push the repository to its connected Git provider, or deploy

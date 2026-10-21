@@ -10,7 +10,8 @@ const savedDialog = document.querySelector('[data-saved-dialog]');
 const savedContent = document.querySelector('[data-saved-content]');
 const downloadSavedButton = document.querySelector('[data-download-saved]');
 let profileImage = '';
-let browserStorageMode = window.location.protocol === 'file:';
+let browserStorageMode = window.location.protocol === 'file:'
+    || window.location.hostname.endsWith('.github.io');
 let hasUnsavedChanges = false;
 const SAVED_PROFILE_KEY = 'portfolio-template-profile';
 const profileFields = [
