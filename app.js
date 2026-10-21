@@ -412,7 +412,7 @@ async function loadSavedProfile() {
         if (!saved.saved) {
             renderProfile(getProfile());
             hasUnsavedChanges = false;
-            status.textContent = `No saved portfolio in ${portfolioStorageName()} yet. Fill in the form and choose Save.`;
+            status.textContent = '';
             return;
         }
         if (!isValidProfile(saved)) {
