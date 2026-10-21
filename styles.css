@@ -52,7 +52,8 @@ a { color: inherit; }
 .editor-actions { display: flex; gap: 10px; }
 .editor-actions .button-primary { flex: 1; }
 .saved-check-button { width: 100%; margin-top: 10px; }
-.save-status { min-height: 1.4em; margin: 12px 0 0; color: #48604f; font-size: .82rem; }
+.save-status { margin: 0 0 12px; color: #48604f; font-size: .82rem; }
+.save-status:empty { display: none; }
 .saved-dialog { width: min(900px, calc(100% - 32px)); max-width: 900px; max-height: min(90vh, 900px); padding: 24px; border: 1px solid #e2e6ef; border-radius: 18px; background: #f9faff; color: #202638; box-shadow: 0 24px 80px #121a2f40; overflow: auto; }
 .saved-dialog::backdrop { background: #18213bb3; backdrop-filter: blur(3px); }
 .saved-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
