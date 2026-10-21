@@ -61,10 +61,24 @@ function validateFullName() {
 }
 
 function sanitizeLettersAndSpaces(field) {
-    field.value = field.value
+    field.value = normalizeLettersAndSpaces(field.value, false);
+}
+
+function normalizeLettersAndSpaces(value, trim = true) {
+    if (typeof value !== 'string') return value;
+    const normalized = value
         .replace(/[^\p{L} ]/gu, '')
-        .replace(/ {2,}/g, ' ')
-        .trimStart();
+        .replace(/ {2,}/g, ' ');
+    return trim ? normalized.trim() : normalized.trimStart();
+}
+
+function normalizeSavedProfile(profile) {
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) return profile;
+    return {
+        ...profile,
+        full_name: normalizeLettersAndSpaces(profile.full_name),
+        career_title: normalizeLettersAndSpaces(profile.career_title),
+    };
 }
 
 function renderProfile(profile, target = card) {
@@ -279,13 +293,14 @@ imageInput.addEventListener('change', (event) => {
 
   viewSavedButton.addEventListener('click', async () => {
       try {
-          const saved = await requestPortfolio('GET');
+          const saved = normalizeSavedProfile(await requestPortfolio('GET'));
           if (!saved.saved) {
               status.textContent = `There is no saved portfolio in ${portfolioStorageName()} yet.`;
               return;
           }
           if (!isValidProfile(saved)) {
-              status.textContent = 'The saved portfolio data is invalid.';
+              status.textContent = '';
+              console.error('Saved portfolio data could not be loaded because required fields are invalid.');
               return;
           }
           const savedCard = card.cloneNode(true);
@@ -409,7 +424,7 @@ form.addEventListener('reset', () => {
 
 async function loadSavedProfile() {
     try {
-        const saved = await requestPortfolio('GET');
+        const saved = normalizeSavedProfile(await requestPortfolio('GET'));
         if (!saved.saved) {
             renderProfile(getProfile());
             hasUnsavedChanges = false;
@@ -417,7 +432,8 @@ async function loadSavedProfile() {
             return;
         }
         if (!isValidProfile(saved)) {
-            status.textContent = 'Saved portfolio data is invalid. Save a new profile to replace it.';
+            status.textContent = '';
+            console.error('Saved portfolio data could not be loaded because required fields are invalid.');
             return;
         }
         applyProfile(saved);
